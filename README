@@ -60,10 +60,9 @@ MAIL-TO-PKT v0.2
     mail2pkt /var/spool/in/fido
 
   * Only base64 encoded files will be decoded in this version! If piped mails
-  are not base64, the plain message will dessapear! Future versions may support
-  different encodings. 
+  are not base64, the message will be put in the user's mailbox.
 
-  * Mails without attachments will be ignored and deleted.
+  * Mails without attachments will be mailed to the local user's mailbox.
 
   * Message bodys are ignored, so tell your links not to write important info
   in the mails they send to you.

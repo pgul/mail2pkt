@@ -1,9 +1,10 @@
 /* --------------------------------------------------------------------------
- * MAIL-TO-PKT v0.2                                            Mar 6th, 2000
+ * MAIL-TO-PKT v0.2                                            Apr 6th, 2000
  * --------------------------------------------------------------------------
  *
- *   This file is part of mail2pkt, and contains mime base64 encoding and
- *   decoding routines.
+ *   This file is part of mail2pkt, and contains mime base64 decoding
+ *   routines.
+ *   This is the HUSKY-DEPENDANT version. 
  *   Get the latest version from http://husky.physcip.uni-stuttgart.de
  *
  *   Copyright (C) 1999-2000  German Theler
@@ -30,4 +31,4 @@
 
 char base64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
-int fromBase64(char *name);
+int fromBase64(char *name, FILE *file);

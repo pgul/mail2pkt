@@ -1,9 +1,10 @@
 /* --------------------------------------------------------------------------
- * MAIL-TO-PKT v0.2                                           Mar 6th, 2000
+ * MAIL-TO-PKT v0.2                                            Apr 6th, 2000
  * --------------------------------------------------------------------------
  *
- *   This file is part of mail2pkt, and contains mime base64 encoding and
- *   decoding routines.
+ *   This file is part of mail2pkt, and contains mime base64 decoding
+ *   routines.
+ *   This is the HUSKY-DEPENDANT version.
  *   Get the latest version from http://husky.physcip.uni-stuttgart.de
  *
  *   Copyright (C) 1999-2000  German Theler
@@ -30,20 +31,20 @@
 
 #include "mime.h"
 
-int fromBase64(char *name)
+int fromBase64(char *name, FILE *from)
 {
-    FILE *file;
+    FILE *to;
     char buffer[255];
     int i;
     int a, b, c, d;
     int x, y, z;
 
-    if ((file = fopen(name, "wb")) == NULL)
+    if ((to = fopen(name, "wb")) == NULL)
         return -1;
 
-    while ((i = getc(stdin)) != '\n') {
-        ungetc(i, stdin);
-        fgets(buffer, 254, stdin);
+    while ((i = getc(from)) != '\n') {
+        ungetc(i, from);
+        fgets(buffer, 254, from);
 
         for (i = 0; (buffer[i] != '\n') && (buffer[i] != '\0'); i += 4) {
             a = strchr(base64, buffer[i]) - base64;
@@ -55,24 +56,24 @@ int fromBase64(char *name)
             y = (((((a << 6) | b) << 6) | c) >> 2) & 0xFF;
             z = ((((((a << 6) | b) << 6) | c) << 6) | d) & 0xFF;
 
-            fputc(x, file);
+            fputc(x, to);
 
             if (c != 64)
-                fputc(y, file);
+                fputc(y, to);
 	    else {
-	        fclose(file);
+	        fclose(to);
 		return 0;
 	    }
 
             if (d != 64)
-                fputc(z, file);
+                fputc(z, to);
 	    else {
-		fclose(file);
+		fclose(to);
 		return 0;
 	    }
         }
     }
-    fclose(file);
+    fclose(to);
     
     return 0;
 }

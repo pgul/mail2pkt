@@ -1,7 +1,3 @@
-Before making an stable release, some of these things must be added:
---------------------------------------------------------------------
-
 - support more encoding types
 - more commandline options
-- keep a copy of the message when something goes wrong
 - make the program more inteligent to cope with everything

@@ -12,7 +12,7 @@ LOGFILE=$HOME/procmail.log
 
 #FIDOCONFIG=$HOME/cfg/main
 
-# Here's the main thing. If you don't want to mail2pkt to put the files in
+# Here's the main thing. If you don't want mail2pkt to put the files in
 # your protected inbound directory, just tell where you want it to put the
 # files in the command line.
 # Of course, you should change this regexp for one that suits you. See

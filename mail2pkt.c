@@ -1,9 +1,10 @@
 /* --------------------------------------------------------------------------
- * MAIL-TO-PKT v0.2                                           Mar 19th, 2000
+ * MAIL-TO-PKT v0.2                                            Apr 6th, 2000
  * --------------------------------------------------------------------------
  *
  *   This program is a procmail filter to automatically decode FTN packets
  *   from BASE64 encoded email attachments.
+ *   This is the HUSKY-DEPENDANT version.
  *   Get the latest version from http://husky.physcip.uni-stuttgart.de
  *
  *   Copyright (C) 1999-2000  German Theler
@@ -28,25 +29,84 @@
  * --------------------------------------------------------------------------
  */
 
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #include <fidoconfig/fidoconfig.h>
 
 #include "mime.c"
 #include "mail2pkt.h"
 
+char *getMBox(void)
+{
+    struct passwd *p;
+    char *buff = malloc(255);
+    int uid = getuid();
 
-int readBoundary(char *boundary)
+    while ((p = getpwent()))
+        if (uid == p->pw_uid)
+            sprintf(buff, "%s%s", MAILSPOOLDIR, p->pw_name);
+
+    return buff;
+
+}
+
+int mailFile(char *name)
+{
+    int c;
+    FILE *from;
+    FILE *to;
+    char *mbox = malloc(255);
+
+    mbox = getMBox();
+    from = fopen(name, "r");
+    to = fopen(mbox, "a");
+
+    while ((c = fgetc(from)) != EOF)
+        fputc(c, to);
+    fclose(to);
+    fclose(from);
+
+    return 0;
+
+}
+
+
+char *makeTempFile(char *inbound)
+{
+    int c;
+    FILE *temp;
+    char *buff = malloc(strlen(inbound)+13);
+    char *name = malloc(13);
+
+    strcpy(name, "pkt2mail.tmp");
+    findName(inbound, name);
+    sprintf(buff, "%s%s", inbound, name);
+
+    if ((temp = fopen(buff, "wb")) == NULL) {
+        strcpy(buff, "");
+        return buff;
+    }
+
+    while ((c = getchar()) != EOF)
+        fputc(c, temp);
+    fclose(temp);
+
+    return buff;
+}
+
+int readBoundary(char *boundary, FILE *file)
 {
     char buff[255];
 
     do {
-        fgets(buff, 255, stdin);
+        fgets(buff, 255, file);
 
-        if (feof(stdin))
+        if (feof(file))
             return -1;
             
         if (strncasecmp(buff, "Content-type: ", 13) == 0) {
@@ -65,13 +125,13 @@ int readBoundary(char *boundary)
     return 0;
 }
 
-int skip(char *boundary)
+int skip(char *boundary, FILE *file)
 {
     char buff[255];
 
     do {
-        fgets(buff, 255, stdin);
-        if (feof(stdin))
+        fgets(buff, 255, file);
+        if (feof(file))
             return -1;
             
     } while(strncmp(buff, boundary, strlen(boundary)-1) != 0);
@@ -136,14 +196,17 @@ int log(char *string, char *dir)
 
 int main(int argc, char *argv[])
 {
+    s_fidoconfig *config;
+    char *tmpName;
+    FILE *tmpFile;
     char buff[255];
     char boundary[255];
     char inbound[255];
     char logdir[255];
     char name[255];
-    s_fidoconfig *config;
     int encoding = TEXT;
 
+    /* check out the arguments */
     config = readConfig();
     if (argc == 1) {
         strncpy(inbound, config->protInbound, 254);
@@ -160,19 +223,51 @@ int main(int argc, char *argv[])
         disposeConfig(config);
         return 1;
     }
-    disposeConfig(config);
-    
-    
+
+    /* get all the stdin to a file, so if something goes wrong, we can
+       save the whole message */
+    tmpName = malloc(strlen(inbound)+13);
+    tmpName = makeTempFile(config->tempInbound);
+
+    /* if we can't write the temp file */
+    if (tmpName[0] == 0) {
+        int c;
+        char *mboxFile = malloc(255);
+        FILE *mbox;
+
+        log("[!] Can't open a tempfile for writing in the temp inbound.\n", logdir);
+        log("[!] Mail saved in your mailbox.\n", logdir);
+
+        mboxFile = getMBox();
+
+        if ((mbox = fopen(mboxFile, "a")) == NULL)
+            return 2;
+
+        while ((c = getchar()) != EOF)
+            fputc(c, mbox);
+        fclose(mbox);
+
+        return 2;
+    }
+
+    if ((tmpFile = fopen(tmpName, "r")) == NULL) {
+        log("[!] Can't open tempfile for reading in the temp inbound.\n", logdir);
+        return 3;
+    }
 
     /* read the headers, and get the boundary */
-    if (readBoundary(boundary) == -1) {
-        log("Can't find a valid boundary! Seems like the message has no attachments, so it is not for us!\n", logdir);
-        return -1;
+    if (readBoundary(boundary, tmpFile) == -1) {
+        log("Message has no attachments, so it is not for us!\n", logdir);
+        log("Mail saved in your mailbox.\n", logdir);
+
+        fclose(tmpFile);
+        mailFile(tmpName);
+        return 4;
     }
 
     do {
 
-        while (strncmp(fgets(buff, 255, stdin), boundary, strlen(boundary)) && strncmp(buff, "\n", 1)) {
+        while (strncmp(fgets(buff, 255, tmpFile), boundary, strlen(boundary)) && strncmp(buff, "\n", 1)) {
             strcpy(name, "");
 
             do {
@@ -215,7 +310,7 @@ int main(int argc, char *argv[])
                     } else
                         name[strlen(name)-1] = 0;
                 }
-            } while (strcmp(fgets(buff, 255, stdin), "\n") != 0);
+            } while (strcmp(fgets(buff, 255, tmpFile), "\n") != 0);
 
             /* A header section has finnished. What must we do? */
 
@@ -229,7 +324,7 @@ int main(int argc, char *argv[])
                 findName(inbound, name);
                 
                 sprintf(buff, "%s%s", inbound, name);
-                if (fromBase64(buff) == 0) {
+                if (fromBase64(buff, tmpFile) == 0) {
                     sprintf(buff, "Received %s OK.\n", name);
                     log(buff, logdir);
                 } else {
@@ -238,9 +333,13 @@ int main(int argc, char *argv[])
                     return -1;
                 }
             } else if (encoding == TEXT)
-                skip(boundary);
+                skip(boundary, tmpFile);
         }
     } while(buff[strlen(boundary)] != '-');
+
+    fclose(tmpFile);
+    remove(tmpName);
+    disposeConfig(config);
 
     return 0;
 }
