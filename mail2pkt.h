@@ -41,7 +41,7 @@
 #define UUENCODED        3
 #define NONE             4
 
-int log(char *string, char *dir);
+int log(char *string, s_fidoconfig *c, int level);
 int readBoundary(char *boundary, FILE *file);
 int skip(char *boundary, FILE *file);
 int main(int argc, char *argv[]);

@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * MAIL-TO-PKT v0.2                                            Apr 6th, 2000
+ * MAIL-TO-PKT v0.2                                            Apr 19th, 2000
  * --------------------------------------------------------------------------
  *
  *   This program is a procmail filter to automatically decode FTN packets
@@ -42,33 +42,69 @@
 #include "mime.c"
 #include "mail2pkt.h"
 
+
+/* ---------------------------------------------------------------------
+ * getMBox
+ *   returns a string containing the file that is used to store incoming
+ *   mail for a certain system and user.
+ * ---------------------------------------------------------------------
+ */
 char *getMBox(void)
 {
     struct passwd *p;
-    char *buff = malloc(255);
+    char *spool = malloc(255);
+    FILE *dir;
     int uid = getuid();
 
+    /* look where could mail boxes be in different systems */
+    if ((dir = fopen("/var/mail", "r")) != NULL)
+        strcpy(spool, "/var/mail/");
+    else if ((dir = fopen("/var/spool/mail", "r")) != NULL)
+        strcpy(spool, "/var/spool/mail/");
+    else if ((dir = fopen("/usr/spool/mail", "r")) != NULL)
+        strcpy(spool, "/usr/spool/mail/");
+    else if ((dir = fopen("/usr/mail", "r")) != NULL)
+        strcpy(spool, "/usr/mail/");
+    else
+        return NULL;
+
+    fclose(dir);
+
+    /* add the user name to the spool */
     while ((p = getpwent()))
         if (uid == p->pw_uid)
-            sprintf(buff, "%s%s", MAILSPOOLDIR, p->pw_name);
+            strcat(spool, p->pw_name);
 
-    return buff;
+    return spool;
 
 }
 
+
+/* ---------------------------------------------------------------------
+ * mailFile
+ *   appends a text file to the user's incoming mailbox.
+ * ---------------------------------------------------------------------
+ */
 int mailFile(char *name)
 {
-    int c;
     FILE *from;
     FILE *to;
+    int c;
     char *mbox = malloc(255);
 
-    mbox = getMBox();
-    from = fopen(name, "r");
-    to = fopen(mbox, "a");
+    if ((mbox = getMBox()) == NULL)
+        return -1;
 
+    if ((from = fopen(name, "r")) == NULL)
+        return -1;
+
+    if ((to = fopen(mbox, "a")) == NULL)
+        return -1;
+
+    /* write the file to the mailbox */
     while ((c = fgetc(from)) != EOF)
         fputc(c, to);
+
     fclose(to);
     fclose(from);
 
@@ -76,33 +112,49 @@ int mailFile(char *name)
 
 }
 
-
-char *makeTempFile(char *inbound)
+/* ---------------------------------------------------------------------
+ * makeTempFile
+ *   reads the standard input and creates a swap file in directory dir
+ *   with the contents of the standard input.
+ *   returns the name of the file.
+ * ---------------------------------------------------------------------
+ */
+char *makeTempFile(char *dir)
 {
     int c;
     FILE *temp;
-    char *buff = malloc(strlen(inbound)+13);
+    char *buff = malloc(strlen(dir)+13);
     char *name = malloc(13);
 
+    /* let's start with this name. If it is already in use, find a new one */
     strcpy(name, "pkt2mail.tmp");
-    findName(inbound, name);
-    sprintf(buff, "%s%s", inbound, name);
+    findName(dir, name);
+    sprintf(buff, "%s%s", dir, name);
 
-    if ((temp = fopen(buff, "wb")) == NULL) {
-        strcpy(buff, "");
-        return buff;
-    }
+    if ((temp = fopen(buff, "wb")) == NULL)
+        return NULL;
 
     while ((c = getchar()) != EOF)
         fputc(c, temp);
+
     fclose(temp);
 
     return buff;
 }
 
+
+/* ---------------------------------------------------------------------
+ * readBoundary
+ *   parses a text file containing a plain email and tries to get the
+ *   message boundary
+ *   WARNING: though I had no problems with this routine, it is not
+ *   guaranteed that this will work. If you find a better routine, please
+ *   commit it in.
+ * ---------------------------------------------------------------------
+ */
 int readBoundary(char *boundary, FILE *file)
 {
-    char buff[255];
+    char *buff = malloc(255);
 
     do {
         fgets(buff, 255, file);
@@ -126,9 +178,15 @@ int readBoundary(char *boundary, FILE *file)
     return 0;
 }
 
+/* ---------------------------------------------------------------------
+ * skip
+ *   ignores a part of a message until the next one (until the end of the
+ *   boundary).
+ * ---------------------------------------------------------------------
+ */
 int skip(char *boundary, FILE *file)
 {
-    char buff[255];
+    char *buff = malloc(255);
 
     do {
         fgets(buff, 255, file);
@@ -140,6 +198,13 @@ int skip(char *boundary, FILE *file)
     return 0;
 }
 
+/* ---------------------------------------------------------------------
+ * lowercase
+ *   replaces uppercase letters (A-Z) in string s with lowercase letters
+ *   (a-z). This is done because of a doc in husky-base that says that
+ *   every created file must be in lowercase.
+ * ---------------------------------------------------------------------
+ */
 void lowercase(char *s)
 {
     int i=0;
@@ -147,23 +212,30 @@ void lowercase(char *s)
     while(s[i] != 0) {
         if ((s[i] >= 'A') && (s[i] <= 'Z'))
             s[i] += 'a' - 'A';
-
         i++;
     }
 }
 
-
-int findName(char *inbound, char *name)
+/* ---------------------------------------------------------------------
+ * findName
+ *   given a file name (name) and a directory (dir), if the name is not
+ *   being used, it does nothing. If it _is_ used, makes a new one up. If
+ *   this new one is already used, makes a new one, etc, until it finds
+ *   one that suits.
+ * ---------------------------------------------------------------------
+ */
+int findName(char *dir, char *name)
 {
     FILE *file;
-    char foo[255];
-    char bar[255];
+    char *foo = malloc(255);
+    char *bar = malloc(255);
 
     strcpy(bar, name);
-    sprintf(foo, "%s%s", inbound, bar);
+    sprintf(foo, "%s%s", dir, bar);
     while((file = fopen(foo, "r")) != NULL) {
+        /* the file name is in use, make a new one up */
         sprintf(bar, "%04x.%s", (unsigned int)time(0), name+9);
-        sprintf(foo, "%s%s", inbound, bar);
+        sprintf(foo, "%s%s", dir, bar);
     };
 
     strcpy(name, bar);
@@ -171,40 +243,49 @@ int findName(char *inbound, char *name)
     return 0;
 }
 
-
-int log(char *string, char *dir)
+/* ---------------------------------------------------------------------
+ * log
+ *   logs an action (string) in the logfile defined in c with the level
+ *   level. It checks if level is defined in fidoconfig before logging.
+ * ---------------------------------------------------------------------
+ */
+int log(char *string, s_fidoconfig *c, int level)
 {
     char *name;
-    char date[40];
+    char *date = malloc(40);
     FILE *logFile;
     time_t t;
 
-    time(&t);
-    strftime(date, 40, "%a %d %b - %H:%M:%S", localtime(&t));
+    if (c->loglevels[0] == 0 || strchr(c->loglevels, level+'0') != NULL) {
+        time(&t);
+        strftime(date, 40, "%a %d %b  %H:%M:%S", localtime(&t));
 
-    if ((name = malloc(strlen(dir) + 13)) == NULL)
-        return -2;
-    sprintf(name, "%smail2pkt.log", dir);
+        if ((name = malloc(strlen(c->logFileDir) + 13)) == NULL)
+            return -2;
 
-    if ((logFile = fopen(name, "a")) == NULL)
-        return -1;
-    fprintf(logFile, "%s  %s", date, string);
-    fclose(logFile);
+        sprintf(name, "%smail2pkt.log", c->logFileDir);
+
+        if ((logFile = fopen(name, "a")) == NULL)
+            return -1;
+        fprintf(logFile, "%d   %s   %s", level, date, string);
+        fclose(logFile);
+    }
 
     return 0;
 }
 
 
+
 int main(int argc, char *argv[])
 {
+    FILE *tmpFile;
     s_fidoconfig *config;
     char *tmpName;
-    FILE *tmpFile;
-    char buff[255];
-    char boundary[255];
-    char inbound[255];
-    char logdir[255];
-    char name[255];
+    char *buff = malloc(255);
+    char *boundary = malloc(255);
+    char *inbound = malloc(255);
+    char *logdir = malloc(255);
+    char *name = malloc(255);
     int encoding = TEXT;
 
     /* check out the arguments */
@@ -236,8 +317,8 @@ int main(int argc, char *argv[])
         char *mboxFile = malloc(255);
         FILE *mbox;
 
-        log("[!] Can't open a tempfile for writing in the temp inbound.\n", logdir);
-        log("[!] Mail saved in your mailbox.\n", logdir);
+        log("[!] Can't open a tempfile for writing in the temp inbound.\n", config, 1);
+        log("[!] Mail saved in your mailbox.\n", config, 1);
 
         mboxFile = getMBox();
 
@@ -252,14 +333,14 @@ int main(int argc, char *argv[])
     }
 
     if ((tmpFile = fopen(tmpName, "r")) == NULL) {
-        log("[!] Can't open tempfile for reading in the temp inbound.\n", logdir);
+        log("[!] Can't open tempfile for reading in the temp inbound.\n", config, 1);
         return 3;
     }
 
     /* read the headers, and get the boundary */
     if (readBoundary(boundary, tmpFile) == -1) {
-        log("Message has no attachments, so it is not for us!\n", logdir);
-        log("Mail saved in your mailbox.\n", logdir);
+        log("Message has no attachments, so it is not for us!\n", config, 1);
+        log("Mail saved in your mailbox.\n", config, 1);
 
         fclose(tmpFile);
         mailFile(tmpName);
@@ -297,7 +378,7 @@ int main(int argc, char *argv[])
                     if (strncasecmp(buff+27, "base64", 6) == 0)
                         encoding = BASE64;
                     else {
-                        log("File is encoded with an unsupported algorithm. Currently only BASE64 is supported.\n", logdir);
+                        log("File is encoded with an unsupported algorithm. Currently only BASE64 is supported.\n", config, 2);
                         return -2;
                     }
 
@@ -327,10 +408,10 @@ int main(int argc, char *argv[])
                 sprintf(buff, "%s%s", inbound, name);
                 if (fromBase64(buff, tmpFile) == 0) {
                     sprintf(buff, "Received %s OK.\n", name);
-                    log(buff, logdir);
+                    log(buff, config, 3);
                 } else {
-                    sprintf(buff, "Error while processing %s.\n", name);
-                    log(buff, logdir);
+                    sprintf(buff, "[!] Error while processing %s.\n", name);
+                    log(buff, config, 1);
                     return -1;
                 }
             } else if (encoding == TEXT)
