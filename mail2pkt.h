@@ -37,7 +37,7 @@ int log(char *string, char *dir);
 int readBoundary(char *boundary, FILE *file);
 int skip(char *boundary, FILE *file);
 int main(void);
-void lowercase(char *s)
+void lowercase(char *s);
 
 /* mime.c */
 int cvt_ascii(unsigned char alpha);
