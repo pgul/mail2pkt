@@ -1,0 +1,24 @@
+include ../huskymak.cfg
+
+OPT     = -O2
+WARN    = -Wall
+LIBS    = -lsmapi -lfidoconfig
+CDEFS   = -D$(OSTYPE) $(ADDCDEFS)
+
+all: mail2pkt$(EXE)
+
+mail2pkt$(EXE): mail2pkt.c
+	$(CC) $(CDEFS) -I../smapi -I$(INCDIR) -L$(LIBDIR) $(LIBS) $(OPT) \
+          $(WARN) -o mail2pkt$(EXE) mail2pkt.c
+
+clean:
+	-$(RM) -f *.o
+	-$(RM) *.1.gz
+
+distclean: clean
+	-$(RM) mail2pkt
+	
+install:
+	install $(IBOPT) mail2pkt$(EXE) $(BINDIR)
+	gzip -c mail2pkt.1 > mail2pkt.1.gz
+	install mail2pkt.1.gz $(MANDIR)/man1
