@@ -25,7 +25,7 @@
  *     along with this program; if not, write to the Free Software
  *     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- *                        
+ *
  * --------------------------------------------------------------------------
  */
 
@@ -36,8 +36,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <fidoconfig/fidoconfig.h>
-#include <fidoconfig/common.h>
+#include <fidoconf/fidoconf.h>
+#include <fidoconf/common.h>
 
 #include "mime.c"
 #include "mail2pkt.h"
@@ -109,7 +109,7 @@ int readBoundary(char *boundary, FILE *file)
 
         if (feof(file))
             return -1;
-            
+
         if (strncasecmp(buff, "Content-type: ", 13) == 0) {
             strncpy(buff, strchr(buff, '=')+1, 254);
             if (buff[0] == '"') {
@@ -134,7 +134,7 @@ int skip(char *boundary, FILE *file)
         fgets(buff, 255, file);
         if (feof(file))
             return -1;
-            
+
     } while(strncmp(buff, boundary, strlen(boundary)-1) != 0);
 
     return 0;
@@ -273,13 +273,13 @@ int main(int argc, char *argv[])
 
             do {
                 /* parse the headers and get important info */
-                
+
                 /* Let's start having a look at the content-type header...*/
                 if (strncasecmp(buff, "Content-type: ", 13) == 0) {
                 /* if it's a text body, we will skip it later */
                     if (strncasecmp(buff+14, "text/plain", 10) == 0)
                         encoding = TEXT;
-     
+
                     /* if it has an attachment, the file name is just after the
                        last '=' */
                     if (strchr(buff, '=') != NULL) {
@@ -291,7 +291,7 @@ int main(int argc, char *argv[])
                             name[strlen(name)-1] = 0;
                     }
                 }
-    
+
                 /* now, the encoding scheme...*/
                 if (strncasecmp(buff, "Content-Transfer-Encoding: ", 26) == 0)
                     if (strncasecmp(buff+27, "base64", 6) == 0)
@@ -300,7 +300,7 @@ int main(int argc, char *argv[])
                         log("File is encoded with an unsupported algorithm. Currently only BASE64 is supported.\n", logdir);
                         return -2;
                     }
-    
+
                 /* if this header is present, then we can get the file name from
                    here too... */
                 if (strncasecmp(buff, "Content-Disposition: ", 21) == 0) {
@@ -323,7 +323,7 @@ int main(int argc, char *argv[])
                 /* rename this bundle to fit a name that is not already
                 in use */
                 findName(inbound, name);
-                
+
                 sprintf(buff, "%s%s", inbound, name);
                 if (fromBase64(buff, tmpFile) == 0) {
                     sprintf(buff, "Received %s OK.\n", name);
