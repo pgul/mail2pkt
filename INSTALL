@@ -13,9 +13,7 @@
 
 2. make, install and/or clean:
 	$ make
-	# make install
+	$ make install
 	$ make clean
-	
-   make sure you use makefile.husky as the makefile (default)
    
 3. Read README to find out how to get it working.
