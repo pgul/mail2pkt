@@ -9,7 +9,7 @@ LIBS    = -lsmapilnx -lfidoconfig
 all: mail2pkt 
 
 mail2pkt: mail2pkt.c
-	$(CC) -DUNIX -I$(INCDIR) -L$(LIBDIR) $(LIBS) $(IBOPT) $(OPT) $(WARN) -o mail2pkt mail2pkt.c
+	$(CC) -D$(OSTYPE) -I$(INCDIR) -L$(LIBDIR) $(LIBS) $(IBOPT) $(OPT) $(WARN) -o mail2pkt mail2pkt.c
 
 clean:
 	-rm -f *.o

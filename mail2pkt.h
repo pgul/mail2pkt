@@ -1,11 +1,11 @@
 /* --------------------------------------------------------------------------
- * MAIL-TO-PKT v0.1                                            Nov 5th, 1999
+ * MAIL-TO-PKT v0.2                                           Jan 22nd, 2000
  * --------------------------------------------------------------------------
  *
- *   This program reads an email from the standard input and converts it
- *   into a FTN packet. Requires smapilnx and fidoconfig libraries to compile.
+ *   This program is a procmail filter to automatically decode FTN packets
+ *   from BASE64 encoded email attachments.
  *
- *   Copyright (C) 1999  German Theler
+ *   Copyright (C) 1999-2000  German Theler
  *       Email: kuroshivo@bigfoot.com
  *        Fido: 4:905/210
  *
@@ -32,17 +32,15 @@
 #define BASE64           2
 #define NONE             3
 
-/* mail2pkt.h */
-int getEncoding(char *s);
-void lowercase(char *s);
+/* mail2pkt.c */
+int log(char *string, char *dir);
+int readBoundary(char *boundary, FILE *file);
+int skip(char *boundary, FILE *file);
 int main(void);
-int readBoundary(char *boundary);
-void skip(char *boundary);
+void lowercase(char *s)
 
 /* mime.c */
 int cvt_ascii(unsigned char alpha);
-int getFile(char *name);
-
-
+int getFile(char *name, FILE *file);
 
 
