@@ -37,6 +37,7 @@
 #include <unistd.h>
 
 #include <fidoconfig/fidoconfig.h>
+#include <fidoconfig/common.h>
 
 #include "mime.c"
 #include "mail2pkt.h"
