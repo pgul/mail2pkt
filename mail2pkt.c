@@ -33,7 +33,7 @@
 #include <string.h>
 #include <time.h>
 
-#include <fidoconfig.h>
+#include <fidoconfig/fidoconfig.h>
 
 #include "mime.c"
 #include "mail2pkt.h"
