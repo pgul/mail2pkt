@@ -1,0 +1,29 @@
+0a. make sure you have both smapi and fidoconfig libraries installed and
+    working. You will need a running version of procmail too.
+    
+0b. also, you will need huskymak.cfg that comes with husky-common.tar.gz
+    to compile
+
+1.  put the pkt2mail package in the directory where the other packages of fido
+    linux reside:
+
+       /usr/src/packages/        -> smapi/
+                                 -> fidoconfig/
+                                 -> mail2pkt/
+
+2. make, install and/or clean:
+	$ make
+	# make install
+	$ make clean
+
+3. Add a new entry in your .procmailrc file to call mail2pkt when a new
+   email comes, for example:
+
+-Cut-----------------------------
+
+:0:
+* Subject.*Fido
+| mail2pkt
+
+-Cut-----------------------------
+

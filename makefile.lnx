@@ -1,0 +1,24 @@
+include ../huskymak.cfg
+
+CC      = gcc 
+OPT     = -O2
+WARN    = -Wall
+LIBS    = -lsmapilnx -lfidoconfig
+
+
+all: mail2pkt 
+
+mail2pkt: mail2pkt.c
+	$(CC) -DUNIX -I$(INCDIR) -L$(LIBDIR) $(LIBS) $(IBOPT) $(OPT) $(WARN) -o mail2pkt mail2pkt.c
+
+clean:
+	-rm -f *.o
+	-rm *.1.gz
+
+distclean: clean
+	-rm mail2pkt
+	
+install:
+	install -s mail2pkt $(BINDIR)
+	gzip -c mail2pkt.1 > mail2pkt.1.gz
+	install mail2pkt.1.gz $(MANDIR)/man1

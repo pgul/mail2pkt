@@ -1,0 +1,83 @@
+MAIL-TO-PKT v0.1
+----------------
+
+This program reads the standard input for a base64 mime enconded email and
+decodes the attachment into the protected inbound directory, defined in
+fidoconfig.
+
+It is designed to be a procmail filter, but can be used in other ways, such
+as called from within a script. If you define the right recipes for procmail,
+you don't need a dedicated mail account.
+
+To get it running, first install it. See INSTALL for details.
+
+
+Config
+------
+
+If you have procmail installed and running, then you should add these lines
+to your ~/.procmailrc file:
+
+--Cut--------------
+:0:
+* ^Subject.*Fido
+| mail2pkt
+--Cut--------------
+
+Of course you should put whatever conditions you need. Take a look at
+procmailrc(5) manpage for further details.
+
+It is suposed that mail2pkt is installed in the binary directory of husky,
+and it is in the user's PATH. If not, you must put the full path to the
+mail2pkt binary (i.e. /usr/bin/mail2pkt).
+
+This way, you can make several procmail recipes for each link you have,
+and don't even need a dedicated POP account!
+
+
+Notes
+-----
+
+ * Only base64 encoded files will be decoded in this version! Make sure the
+piped mails are base64, otherwise they will desappear. Future versions
+may support different encodings.
+
+ * Message bodys are ignored, so tell your links not to write important info
+in the mails they send to you.
+
+ * All the files are created in the protected inbound.
+
+ * Take care of file permissions! If you receive the mail from a POP server
+with a user, and process the packets with another user, there will be 
+permissions troubles. A solution could be this:
+
+The POP receiving user is pop and the fidonet processing user is fido, so:
+
+In the /home/pop/.procmailrc, put this recipe:
+
+--Cut--------------
+:0:
+* ^Subject.*Fido
+! fido
+--Cut--------------
+
+In the /home/fido/.procmailrc, put this one:
+
+--Cut--------------
+:0:
+* ^From.pop
+| mail2pkt
+--Cut--------------
+
+Now, the files are created with the correct owner.
+
+
+Feedback
+--------
+
+I wanna know who's using my program, so please write me. I hope to hear back
+from you.
+
+German Theler
+kuroshivo@bigfoot.com
+4:905/210

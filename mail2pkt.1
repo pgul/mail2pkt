@@ -1,0 +1,17 @@
+.TH MAIL2PKT 1 "MAIL-to-PKT v0.2"
+.SH NAME
+mail2pkt \- converts email attachments to FTN packets
+.SH SYNTAX
+.TP
+You might call \fBmail2pkt\fP from your \fB~/.procmailrc\fP file.
+.SH DESCRIPTION
+MAIL2PKT will read an email from the standard input and try to decode it
+and write a FTN packet in your inbound, defined in \fBfidoconfig\fP.
+Currently, only base64 encoded files are supported, but other encodings
+may be added in the future.
+.SH EXAMPLES
+For configuration examples, see the README file.
+.SH BUGS
+There are a lot. Please send them to kuroshivo@bigfoot.com
+.SH AUTHOR
+German Theler - kuroshivo@bigfoot.com
