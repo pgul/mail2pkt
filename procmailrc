@@ -1,0 +1,13 @@
+# .procmailrc file for calling mail2pkt
+
+# It is a good idea to have a log when something goes wrong
+LOGFILE=$HOME/procmail.log
+# Again, if you have your config file in a non standard location, you should
+# tell fidoconfig where is it, EVEN IF YOU HAVE $FIDOCONFIG DEFINED
+# IN ~/.basr_profile!
+#FIDOCONFIG=$HOME/cfg/config
+
+:0
+* ^Subject.Fido.*
+| mail2pkt
+
