@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * MAIL-TO-PKT v0.2                                           Mar 6th, 2000
+ * MAIL-TO-PKT v0.2                                           Mar 19th, 2000
  * --------------------------------------------------------------------------
  *
  *   This program is a procmail filter to automatically decode FTN packets
@@ -91,6 +91,26 @@ void lowercase(char *s)
     }
 }
 
+
+int findName(char *inbound, char *name)
+{
+    FILE *file;
+    char foo[255];
+    char bar[255];
+
+    strcpy(bar, name);
+    sprintf(foo, "%s%s", inbound, bar);
+    while((file = fopen(foo, "r")) != NULL) {
+        sprintf(bar, "%04x.%s", (unsigned int)time(0), name+9);
+        sprintf(foo, "%s%s", inbound, bar);
+    };
+
+    strcpy(name, bar);
+
+    return 0;
+}
+
+
 int log(char *string, char *dir)
 {
     char *name;
@@ -137,6 +157,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Usage: mail2pkt [inbound]\n
   If inbound is not present, protected inbound from fidoconfig is used.\n
   See manual page for details.\n");
+        disposeConfig(config);
         return 1;
     }
     disposeConfig(config);
@@ -202,6 +223,11 @@ int main(int argc, char *argv[])
                 /* according to Matthias docs, all the files we create
                 must be lower case */
                 lowercase(name);
+
+                /* rename this bundle to fit a name that is not already
+                in use */
+                findName(inbound, name);
+                
                 sprintf(buff, "%s%s", inbound, name);
                 if (fromBase64(buff) == 0) {
                     sprintf(buff, "Received %s OK.\n", name);
