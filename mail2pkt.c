@@ -374,13 +374,14 @@ int main(int argc, char *argv[])
                 }
 
                 /* now, the encoding scheme...*/
-                if (strncasecmp(buff, "Content-Transfer-Encoding: ", 26) == 0)
-                    if (strncasecmp(buff+27, "base64", 6) == 0)
+                if (strncasecmp(buff, "Content-Transfer-Encoding: ", 26) == 0) {
+                    if (strncasecmp(buff+27, "base64", 6) == 0) {
                         encoding = BASE64;
-                    else {
+                    } else {
                         log("File is encoded with an unsupported algorithm. Currently only BASE64 is supported.\n", config, 2);
                         return -2;
                     }
+		}
 
                 /* if this header is present, then we can get the file name from
                    here too... */
