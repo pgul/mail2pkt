@@ -230,8 +230,9 @@ int findName(char *dir, char *name)
     char *foo = malloc(255);
     char *bar = malloc(255);
 
+    /* check if the names ends in .out, .cut or .dut and translate to .pkt */
     strcpy(bar, name);
-    if (bar[strlen(bar)-2] == 'u')
+    if ((bar[strlen(bar)-2] == 'u') && (bar[strlen(bar)-1] == 't'))
         strcpy(bar+strlen(bar)-3, "pkt");
 
     sprintf(foo, "%s%s", dir, bar);
@@ -240,8 +241,6 @@ int findName(char *dir, char *name)
         sprintf(bar, "%04x.%s", (unsigned int)time(0), name+9);
         sprintf(foo, "%s%s", dir, bar);
     };
-
-    /* check if the names ends in .out, .cut or .dut and translate to .pkt */
 
     strcpy(name, bar);
 
