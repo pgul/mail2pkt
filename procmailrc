@@ -1,13 +1,24 @@
-# .procmailrc file for calling mail2pkt
+# Sample .procmailrc file for calling mail2pkt to automatically receive
+# FTN packets via email.
+# Copy and rename it to ~/.procmailrc
 
 # It is a good idea to have a log when something goes wrong
+
 LOGFILE=$HOME/procmail.log
-# Again, if you have your config file in a non standard location, you should
-# tell fidoconfig where is it, EVEN IF YOU HAVE $FIDOCONFIG DEFINED
-# IN ~/.basr_profile!
-#FIDOCONFIG=$HOME/cfg/config
+
+# If you have your main fidoconfig file in a non-standard file, (i.e /etc/fido)
+# you must declare it here, _even_ if you already have set the FIDOCONFIG
+# environment value before. I don't know why, simply procmail ignores it...
+
+#FIDOCONFIG=$HOME/cfg/main
+
+# Here's the main thing. If you don't want to mail2pkt to put the files in
+# your protected inbound directory, just tell where you want it to put the
+# files in the command line.
+# Of course, you should change this regexp for one that suits you. See
+# procmail man page for details.
 
 :0
 * ^Subject.Fido.*
 | mail2pkt
-
+#| mail2pkt /var/spool/fido/in

@@ -1,12 +1,11 @@
 0a. make sure you have both smapi and fidoconfig libraries installed and
-    working. You will need a running version of procmail too if you do not
-    have a full dedicated email account on your local system.
+    working. A working version of procmail is highly recommended.
     
 0b. also, you will need huskymak.cfg that comes with husky-common.tar.gz
-    to compile
+    to compile.
 
-1.  put the pkt2mail package in the directory where the other packages of fido
-    linux reside:
+1.  put the mail2pkt package in the directory where the other packages of fido
+    linux reside, for example:
 
        /usr/src/packages/        -> smapi/
                                  -> fidoconfig/
@@ -16,5 +15,7 @@
 	$ make
 	# make install
 	$ make clean
-
+	
+   make sure you use makefile.husky as the makefile (default)
+   
 3. Read README to find out how to get it working.

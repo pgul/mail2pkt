@@ -1,12 +1,13 @@
 /* --------------------------------------------------------------------------
- * MAIL-TO-PKT v0.2                                           Jan 22nd, 2000
+ * MAIL-TO-PKT v0.2                                           Mar 6th, 2000
  * --------------------------------------------------------------------------
  *
  *   This program is a procmail filter to automatically decode FTN packets
  *   from BASE64 encoded email attachments.
+ *   Get the latest version from http://husky.physcip.uni-stuttgart.de
  *
  *   Copyright (C) 1999-2000  German Theler
- *       Email: kuroshivo@bigfoot.com
+ *       Email: german@linuxfreak.com
  *        Fido: 4:905/210
  *
  *
@@ -38,18 +39,18 @@
 #include "mail2pkt.h"
 
 
-int readBoundary(char *boundary, FILE *file)
+int readBoundary(char *boundary)
 {
     char buff[255];
 
     do {
-        fgets(buff, 255, file);
+        fgets(buff, 255, stdin);
 
-        if (feof(file))
+        if (feof(stdin))
             return -1;
             
         if (strncasecmp(buff, "Content-type: ", 13) == 0) {
-            strcpy(buff, strchr(buff, '=')+1);
+            strncpy(buff, strchr(buff, '=')+1, 254);
             if (buff[0] == '"') {
                 sprintf(boundary, "--%s", buff+1);
                 boundary[strlen(boundary)-2] = 0;
@@ -64,13 +65,13 @@ int readBoundary(char *boundary, FILE *file)
     return 0;
 }
 
-int skip(char *boundary, FILE *file)
+int skip(char *boundary)
 {
     char buff[255];
 
     do {
-        fgets(buff, 255, file);
-        if (feof(file))
+        fgets(buff, 255, stdin);
+        if (feof(stdin))
             return -1;
             
     } while(strncmp(buff, boundary, strlen(boundary)-1) != 0);
@@ -113,36 +114,49 @@ int log(char *string, char *dir)
 }
 
 
-int main(void)
+int main(int argc, char *argv[])
 {
-    s_fidoconfig *config;
-
     char buff[255];
     char boundary[255];
+    char inbound[255];
+    char logdir[255];
     char name[255];
-
-    /* Default enconding */
+    s_fidoconfig *config;
     int encoding = TEXT;
 
     config = readConfig();
+    if (argc == 1) {
+        strncpy(inbound, config->protInbound, 254);
+        strncpy(logdir, config->logFileDir, 254);
+    } else if (argc == 2) {
+        strncpy(inbound, argv[1], 254);
+        if (inbound[strlen(inbound)-1] != '/')
+            strcat(inbound, "/");
+        strncpy(logdir, config->logFileDir, 254);
+    } else {
+        fprintf(stderr, "Usage: mail2pkt [inbound]\n
+  If inbound is not present, protected inbound from fidoconfig is used.\n
+  See manual page for details.\n");
+        return 1;
+    }
+    disposeConfig(config);
+    
+    
 
-    /* Get the file pointer... */
     /* read the headers, and get the boundary */
-    if (readBoundary(boundary, stdin) == -1) {
-        log("Can't find a valid boundary! Seems like the message has no attachments, so it is not for us!", config->logFileDir);
+    if (readBoundary(boundary) == -1) {
+        log("Can't find a valid boundary! Seems like the message has no attachments, so it is not for us!\n", logdir);
         return -1;
     }
 
     do {
-        while (strcmp(fgets(buff, strlen(boundary), stdin), boundary+1)) {
-            fseek(stdin, -strlen(boundary)+1, SEEK_CUR);
+
+        while (strncmp(fgets(buff, 255, stdin), boundary, strlen(boundary)) && strncmp(buff, "\n", 1)) {
             strcpy(name, "");
 
             do {
-                /* read a line */
-                fgets(buff, 255, stdin);
-
-                /* parse it */
+                /* parse the headers and get important info */
+                
                 /* Let's start having a look at the content-type header...*/
                 if (strncasecmp(buff, "Content-type: ", 13) == 0) {
                 /* if it's a text body, we will skip it later */
@@ -164,15 +178,14 @@ int main(void)
                 /* now, the encoding scheme...*/
                 if (strncasecmp(buff, "Content-Transfer-Encoding: ", 26) == 0)
                     if (strncasecmp(buff+27, "base64", 6) == 0)
-                    encoding = BASE64;
+                        encoding = BASE64;
                     else {
-                        log("File is encoded with an unsupported algorithm. Currently only BASE64 is supported.", config->logFileDir);
+                        log("File is encoded with an unsupported algorithm. Currently only BASE64 is supported.\n", logdir);
                         return -2;
                     }
     
                 /* if this header is present, then we can get the file name from
                    here too... */
-
                 if (strncasecmp(buff, "Content-Disposition: ", 21) == 0) {
                     strcpy(name, strchr(buff, '=')+1);
                     if (name[0] == '"') {
@@ -181,7 +194,7 @@ int main(void)
                     } else
                         name[strlen(name)-1] = 0;
                 }
-            } while (strcmp(buff, "\n") != 0);
+            } while (strcmp(fgets(buff, 255, stdin), "\n") != 0);
 
             /* A header section has finnished. What must we do? */
 
@@ -189,21 +202,19 @@ int main(void)
                 /* according to Matthias docs, all the files we create
                 must be lower case */
                 lowercase(name);
-                sprintf(buff, "%s%s", config->protInbound, name);
-                if (getFile(buff, stdin) == 0) {
-                    sprintf(buff, "Received %s.\n", name);
-                    log(buff, config->logFileDir);
+                sprintf(buff, "%s%s", inbound, name);
+                if (fromBase64(buff) == 0) {
+                    sprintf(buff, "Received %s OK.\n", name);
+                    log(buff, logdir);
                 } else {
                     sprintf(buff, "Error while processing %s.\n", name);
-                    log(buff, config->logFileDir);
+                    log(buff, logdir);
+                    return -1;
                 }
             } else if (encoding == TEXT)
-                skip(boundary, stdin);
+                skip(boundary);
         }
-    } while(fgetc(stdin) != '-');
-
-
-    fclose(stdin);
+    } while(buff[strlen(boundary)] != '-');
 
     return 0;
 }

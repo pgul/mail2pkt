@@ -1,97 +1,84 @@
 MAIL-TO-PKT v0.2
 ----------------
 
- This program reads the standard input for a base64 mime enconded email and
- decodes the attachment into the protected inbound directory, defined in
- fidoconfig.
-
- It is designed to be a procmail filter, but can be used in other ways, such
- as called from within a script. If you define the right recipes for procmail,
- you don't need a dedicated mail account.
- You can also call it from your .forward file directly, but it doesn't work
- when your configuration file is in a non standard location (i.e. /etc/fido).
-
- Once installed (see INSTALL), follow this steps to get it working. Note that
- ~/ means the home directory of the user running all the fido stuff.
-
- There are several ways to call mail2pkt, but we will take a look at two of
- them:
-
- a) From a .forward file. In this way, all the incoming mails will be piped
- to mail2pkt. If you have a dedicated account (or are already forwarding mail
- from another account using procmail), this is a good idea. But keep in mind
- that if you have your config file located outside /etc/fido (for Linux),
- fidoconfig will be unable to get the value of $FIDOCONFIG, I don't know why.
- So, if you do have your configuration in a standard directory and you need
- all of your incoming mail to be piped, put this in your ~/.forward file:
+ What is it?
  
----cut---cut---
-|/usr/local/bin/mail2pkt
----cut---cut---
-
- You should put the full path to the binary, again, beacause it cannot get the
- proper value of $PATH. Make sure there are no spaces between | and /.
+  This program reads the standard input for a base64 mime enconded email and
+  decodes the attachment into the protected inbound directory defined in
+  fidoconfig or in an user-selected directory.
  
- b) From a ~/.procmailrc recipe. This is the most powerfull way of calling,
- but needs more steps...
+ Where can I find it?
+ 
+  You can get the latest version from http://husky.physcip.uni-stuttgart.de
+ 
+ How must I use it?
+ 
+  It is designed to be a procmail filter, but can be used in other ways, such
+  as called from within a script. If you define the right recipes for procmail,
+  you don't even need a dedicated mail account. You can also call it from your
+  .forward file directly, but it doesn't work when your configuration file is
+  in a non standard location (i.e. /etc/fido).
 
- First, you must tell ~/.forward to, yes, forward :-) all incoming mails to
- procmail. So, first, ~/.forward must be:
+  Once installed (see INSTALL), follow this steps to get it working. Note that
+  ~/ means the home directory of the user running all the fido stuff.
+
+  As said above, there are several ways to call mail2pkt, but here I will
+  discuss only as a procmail filter. This is the most powerfull way to call
+  mail2pkt.
+
+  First, you must tell ~/.forward to, yes, forward :-) all incoming mails to
+  procmail. So, first, ~/.forward must be (I assume you have already a working
+  version of procmail in your system):
  
 ---cut---cut---
 |/usr/bin/procmail
 ---cut---cut---
 
- Now, we must build a ~/.procmailrc file:
+  Don't put any spaces between '|' and the full path to procmail.
 
----cut---cut---
-# .procmailrc file for calling mail2pkt
+  Now, you must build a proper ~/.procmailrc. Use the provided procmailrc for
+  reference (that means cut & paste :-))
 
-# It is a good idea to have a log when something goes wrong
-LOGFILE=$HOME/procmail.log
-# Again, if you have your config file in a non standard location, you should
-# tell fidoconfig where is it, EVEN IF YOU HAVE $FIDOCONFIG DEFINED
-# IN ~/.basr_profile!
-#FIDOCONFIG=$HOME/cfg/config
+  Of course you should put whatever recipes you need. Take a look at the
+  procmailrc(5) manpage for further details.
 
-:0
-* ^Subject.Fido.*
-| mail2pkt
----cut---cut---
+  It it suposed that mail2pkt is installed in the binary directory of husky,
+  and it is in the user's PATH. If not, you must put the full path to the
+  mail2pkt binary (i.e. /usr/local/bin/mail2pkt).
 
- Of course you should put whatever conditions you need. Take a look at
- procmailrc(5) manpage for further details.
-
- It is suposed that mail2pkt is installed in the binary directory of husky,
- and it is in the user's PATH. If not, you must put the full path to the
- mail2pkt binary (i.e. /usr/local/bin/mail2pkt).
-
- This way, you can make several procmail recipes for each link you have, based
- in the subject, from, to, or whatever field you want, and don't even need a
- dedicated POP account!
+  This way, you can make several procmail recipes for each link you have, based
+  in the subject, from, to, or whatever field you want, and don't even need a
+  dedicated mail account!
 
 
  Notes
- -----
 
- * Only base64 encoded files will be decoded in this version! If piped mails
- are not base64, the plain message will dessapear!. Future versions may support
- different encodings.
+  * If no command line arguments are given, mail2pkt will read fidoconfig for
+  the inbound. You can give a different inbound directory in the command line.
+  For example:
+ 
+    mail2pkt /var/spool/in/fido
 
- * Mails without attachments will be ignored and deleted.
+  * Only base64 encoded files will be decoded in this version! If piped mails
+  are not base64, the plain message will dessapear! Future versions may support
+  different encodings. 
 
- * Message bodys are ignored, so tell your links not to write important info
- in the mails they send to you.
+  * Mails without attachments will be ignored and deleted.
 
- * All the files are created in the protected inbound, and lowercase.
+  * Message bodys are ignored, so tell your links not to write important info
+  in the mails they send to you.
 
- * Take care of file permissions! If you receive the mail from a POP server
- with a user, and process the packets with another user, there will be 
- permissions troubles. A solution could be this:
+  * I AM NOT RESPONSABLE FOR ANY LOST OF DATA BECAUSE OF MAIL2PKT.
 
- The POP receiving user is pop and the fidonet processing user is fido, so:
+  * All the files are created in lowercase.
 
-In /home/pop/.procmailrc, put this recipe:
+  * Take care of file permissions! If you receive the mail from a POP server
+  with a user, and process the packets with another user, there will be 
+  permissions troubles. A solution could be this:
+
+  The POP receiving user is pop and the fidonet processing user is fido, so:
+
+  In /home/pop/.procmailrc, put this recipe:
 
 ---cut---cut---
 :0:
@@ -99,7 +86,7 @@ In /home/pop/.procmailrc, put this recipe:
 ! fido
 ---cut---cut---
 
-In /home/fido/.procmailrc, put this one:
+  In /home/fido/.procmailrc, put this one:
 
 ---cut---cut---
 :0:
@@ -107,15 +94,14 @@ In /home/fido/.procmailrc, put this one:
 | mail2pkt
 ---cut---cut---
 
-Now, the files are created with the correct owner.
+  Now, the files are created with the correct owner.
 
 
-Feedback
---------
+ Feedback
 
-I wanna know who's using my program, so please write me. I hope to hear back
-from you.
+  I wanna know who's using my program, so please write me. I hope to hear back
+  from you.
 
-German Theler
-kuroshivo@bigfoot.com
-4:905/210
+ German Theler
+ german@linuxfreak.com
+ 4:905/210

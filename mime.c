@@ -1,12 +1,13 @@
 /* --------------------------------------------------------------------------
- * MAIL-TO-PKT v0.2                                           Jan 22nd, 2000
+ * MAIL-TO-PKT v0.2                                           Mar 6th, 2000
  * --------------------------------------------------------------------------
  *
- *   This program is a procmail filter to automatically decode FTN packets
- *   from BASE64 encoded email attachments.
+ *   This file is part of mail2pkt, and contains mime base64 encoding and
+ *   decoding routines.
+ *   Get the latest version from http://husky.physcip.uni-stuttgart.de
  *
  *   Copyright (C) 1999-2000  German Theler
- *       Email: kuroshivo@bigfoot.com
+ *       Email: german@linuxfreak.com
  *        Fido: 4:905/210
  *
  *
@@ -27,92 +28,54 @@
  * --------------------------------------------------------------------------
  */
 
-char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-                  "0123456789+/";
+#include "mime.h"
 
-int cvt_ascii( unsigned char alpha )
+int fromBase64(char *name)
 {
-   if      ( (alpha >= 'A') && (alpha <= 'Z') ) return (int)(alpha - 'A');
-   else if ( (alpha >= 'a') && (alpha <= 'z') )
-        return 26 + (int)(alpha - 'a');
-   else if ( (alpha >= '0') && (alpha <= '9' ) )
-        return 52 + (int)(alpha - '0');
-   else if ( alpha == '+' ) return 62;
-   else if ( alpha == '/' ) return 63;
-   else if ( alpha == '=' ) return -2;
-   else                     return -1;
-}
+    FILE *file;
+    char buffer[255];
+    int i;
+    int a, b, c, d;
+    int x, y, z;
 
+    if ((file = fopen(name, "wb")) == NULL)
+        return -1;
 
-int getFile(char *name, FILE *file)
-{
-    FILE *out;
-    int c;
-    unsigned char blivit;
-    unsigned long accum = 0;
-    unsigned long value;
-    char buff[80];
-    int decode_state = 0;
-    int shift = 0;
-    int index;
-    int quit = 0;
-    int cycle_flag = 0;
+    while ((i = getc(stdin)) != '\n') {
+        ungetc(i, stdin);
+        fgets(buffer, 254, stdin);
 
-    if ((out = fopen(name, "wb")) == NULL)
-        return -2;
+        for (i = 0; (buffer[i] != '\n') && (buffer[i] != '\0'); i += 4) {
+            a = strchr(base64, buffer[i]) - base64;
+            b = strchr(base64, buffer[i+1]) - base64;
+            c = strchr(base64, buffer[i+2]) - base64;
+            d = strchr(base64, buffer[i+3]) - base64;
 
-    while ((c = fgetc(file)) != '-') {
-        ungetc(c, file);
-        fgets(buff, 80, file);
+            x = (((a << 6) | b) >> 4) & 0xFF;
+            y = (((((a << 6) | b) << 6) | c) >> 2) & 0xFF;
+            z = ((((((a << 6) | b) << 6) | c) << 6) | d) & 0xFF;
 
-        if (feof(file))
-            return -1;
-        else {
-            cycle_flag = 1;
+            fputc(x, file);
 
-            if ((decode_state == 1) && ((buff[0] == '\n') || (buff[0] < '+')))
-               return -1;
-        }
+            if (c != 64)
+                fputc(y, file);
+	    else {
+	        fclose(file);
+		return 0;
+	    }
 
-        if (decode_state == 0) {
-            for (index = 0; (buff[index] != '\n') && (buff[index] != '\0') && (decode_state >= 0); index++ ) {
-                if (((buff[index] >= 'A') && (buff[index] <= 'Z')) ||
-                   ((buff[index] >= 'a') && (buff[index] <= 'z')) ||
-                   ((buff[index] >= '0') && (buff[index] <= '9')) ||
-                   (buff[index] == '+') || (buff[index] == '/') ||
-                   (buff[index] == '=')) {
-                    decode_state = 1;
-                } else {
-                    return -3;
-                }
-            }
-        }
-
-        if (quit != 0)
-            buff[0] = '\0';
-
-        for (index = 0; (buff[index] != '\n') && (buff[index] != '\0'); index++) {
-            value = cvt_ascii(buff[index]);
-
-            if (value < 64) {
-                accum <<= 6;
-                shift += 6;
-                accum |= value;
-                if (shift >= 8) {
-                    shift -= 8;
-                    value = accum >> shift;
-                    blivit = (unsigned char)value & 0xFFl;
-                    fputc(blivit, out);
-                }
-            } else {
-                quit = 1;
-                break;
-            }
+            if (d != 64)
+                fputc(z, file);
+	    else {
+		fclose(file);
+		return 0;
+	    }
         }
     }
-
-   fclose(out);
-
-   return 0;
-
+    fclose(file);
+    
+    return 0;
 }
+
+
+

@@ -1,12 +1,13 @@
 /* --------------------------------------------------------------------------
- * MAIL-TO-PKT v0.2                                           Jan 22nd, 2000
+ * MAIL-TO-PKT v0.2                                           Mar 6th, 2000
  * --------------------------------------------------------------------------
  *
  *   This program is a procmail filter to automatically decode FTN packets
  *   from BASE64 encoded email attachments.
+ *   Get the latest version from http://husky.physcip.uni-stuttgart.de
  *
  *   Copyright (C) 1999-2000  German Theler
- *       Email: kuroshivo@bigfoot.com
+ *       Email: german@linuxfreak.com
  *        Fido: 4:905/210
  *
  *
@@ -27,20 +28,19 @@
  * --------------------------------------------------------------------------
  */
 
+#define VERSION          "0.2"
+
 #define TEXT             0
-#define QUOTED_PRINTABLE 1
-#define BASE64           2
-#define NONE             3
+#define BASE64           1
 
-/* mail2pkt.c */
+/* not yet implemented */
+#define QUOTED_PRINTABLE 2
+#define UUENCODED        3
+#define NONE             4
+
 int log(char *string, char *dir);
-int readBoundary(char *boundary, FILE *file);
-int skip(char *boundary, FILE *file);
-int main(void);
+int readBoundary(char *boundary);
+int skip(char *boundary);
 void lowercase(char *s);
-
-/* mime.c */
-int cvt_ascii(unsigned char alpha);
-int getFile(char *name, FILE *file);
-
+int main(int argc, char *argv[]);
 
