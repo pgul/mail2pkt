@@ -293,7 +293,7 @@ int main(int argc, char *argv[])
     int encoding = TEXT;
 
     /* check out the arguments */
-    config = readConfig();
+    config = readConfig(NULL);
     if (argc == 1) {
         strncpy(inbound, config->protInbound, 254);
         strncpy(logdir, config->logFileDir, 254);
